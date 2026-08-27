@@ -21,7 +21,7 @@ A Discord bot for organizing movie nights with friends. Suggest movies, vote wit
 
 - [Node.js](https://nodejs.org/) 18 or newer
 - A Discord account and a server where you can add bots
-- A free [TMDb](https://www.themoviedb.org/) account
+- TMDb API key
 
 ## 1. Installation
 
