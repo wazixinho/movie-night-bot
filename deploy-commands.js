@@ -2,48 +2,66 @@
 // deploy-commands.js
 // ==========================================================
 // Registers every slash command in ./commands with Discord.
-// Run this once whenever you add/change a command:
 //
-//   node deploy-commands.js
+// Usage:
+//   node deploy-commands.js          -> Deploys to GUILD_ID if set, or globally
+//   node deploy-commands.js --global -> Forces global deployment to all servers
+//   npm run deploy                   -> Deploys to guild/global based on .env
+//   npm run deploy:global            -> Deploys globally
 //
-// Commands are deployed to a single guild (server), which is
-// instant. Guild-scoped deployment is ideal here since this bot
-// is meant for one private server. If you ever need the bot in
-// multiple servers, swap Routes.applicationGuildCommands(...)
-// below for Routes.applicationCommands(clientId) - note that
-// global commands can take up to an hour to show up everywhere.
+// Note: Guild deployment is instant. Global deployment can take
+// up to 1 hour to propagate across Discord.
 
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const { REST, Routes } = require('discord.js');
 
-const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = process.env;
+async function deployCommands(options = {}) {
+  const token = process.env.DISCORD_TOKEN?.trim();
+  const clientId = process.env.CLIENT_ID?.trim();
+  const guildId = process.env.GUILD_ID?.trim();
 
-if (!DISCORD_TOKEN || !CLIENT_ID || !GUILD_ID) {
-  console.error('❌ Missing DISCORD_TOKEN, CLIENT_ID, or GUILD_ID in your .env file.');
-  process.exit(1);
-}
-
-const commands = [];
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
-
-for (const file of commandFiles) {
-  const command = require(path.join(commandsPath, file));
-  if ('data' in command) {
-    commands.push(command.data.toJSON());
+  if (!token || !clientId) {
+    console.error('❌ Missing DISCORD_TOKEN or CLIENT_ID in your environment.');
+    throw new Error('Missing DISCORD_TOKEN or CLIENT_ID');
   }
+
+  const commands = [];
+  const commandsPath = path.join(__dirname, 'commands');
+  const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
+
+  for (const file of commandFiles) {
+    const command = require(path.join(commandsPath, file));
+    if ('data' in command) {
+      commands.push(command.data.toJSON());
+    }
+  }
+
+  const rest = new REST().setToken(token);
+
+  const forceGlobal = options.global || process.argv.includes('--global');
+  const isGlobal = forceGlobal || !guildId;
+
+  if (isGlobal) {
+    console.log(`🌐 Deploying ${commands.length} slash commands globally...`);
+    await rest.put(Routes.applicationCommands(clientId), { body: commands });
+    console.log('✅ Global slash commands deployed successfully (propagation may take up to an hour).');
+  } else {
+    console.log(`🚀 Deploying ${commands.length} slash commands to guild ${guildId}...`);
+    await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands });
+    console.log('✅ Guild slash commands deployed successfully.');
+  }
+
+  return commands.length;
 }
 
-const rest = new REST().setToken(DISCORD_TOKEN);
-
-(async () => {
-  try {
-    console.log(`🚀 Deploying ${commands.length} slash commands...`);
-    await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands });
-    console.log('✅ Slash commands deployed successfully.');
-  } catch (error) {
+if (require.main === module) {
+  const isGlobal = process.argv.includes('--global');
+  deployCommands({ global: isGlobal }).catch((error) => {
     console.error('❌ Failed to deploy commands:', error);
-  }
-})();
+    process.exit(1);
+  });
+}
+
+module.exports = { deployCommands };

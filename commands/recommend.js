@@ -10,6 +10,7 @@ const {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   ComponentType,
+  MessageFlags,
 } = require('discord.js');
 const tmdb = require('../utils/tmdb');
 const moviesDB = require('../database/movies');
@@ -128,7 +129,7 @@ module.exports = {
       const selectedRec = topRecs.find((r) => String(r.id) === selectedTmdbId);
 
       if (!selectedRec) {
-        await i.reply({ content: 'Movie not found.', ephemeral: true });
+        await i.reply({ content: 'Movie not found.', flags: MessageFlags.Ephemeral });
         return;
       }
 
@@ -136,7 +137,7 @@ module.exports = {
       if (duplicate) {
         await i.reply({
           embeds: [errorEmbed(`**${selectedRec.title}** is already in the Watchlist!`)],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }

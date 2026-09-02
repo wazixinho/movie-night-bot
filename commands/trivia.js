@@ -178,7 +178,7 @@ module.exports = {
     const buttons = question.choices.map((choice, idx) =>
       new ButtonBuilder()
         .setCustomId(`trivia_${idx}`)
-        .setLabel(`${labels[idx]}: ${choice}`.slice(0, 80))
+        .setLabel(`${labels[idx]}: ${choice || 'Unknown'}`.slice(0, 80))
         .setStyle(ButtonStyle.Primary)
     );
 

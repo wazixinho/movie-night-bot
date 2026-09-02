@@ -20,12 +20,18 @@ function isAdmin(interaction, settings) {
   if (!interaction.inGuild()) return false;
 
   const member = interaction.member;
-  if (member.permissions.has(PermissionFlagsBits.Administrator)) {
+  if (!member) return false;
+
+  if (member.permissions?.has && member.permissions.has(PermissionFlagsBits.Administrator)) {
     return true;
   }
 
-  if (settings?.adminRoleId && member.roles?.cache?.has(settings.adminRoleId)) {
-    return true;
+  if (settings?.adminRoleId) {
+    if (member.roles?.cache?.has) {
+      if (member.roles.cache.has(settings.adminRoleId)) return true;
+    } else if (Array.isArray(member.roles)) {
+      if (member.roles.includes(settings.adminRoleId)) return true;
+    }
   }
 
   return false;

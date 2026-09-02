@@ -10,9 +10,14 @@ const path = require('path');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
 
-// The database file lives right next to this file, so the bot
-// works no matter which folder you run "node index.js" from.
-const DB_PATH = path.join(__dirname, 'moviebot.db');
+// Support custom DATABASE_PATH for Docker / cloud volume persistence,
+// defaulting to moviebot.db in this folder.
+const DB_PATH = process.env.DATABASE_PATH
+  ? path.resolve(process.env.DATABASE_PATH)
+  : path.join(__dirname, 'moviebot.db');
+
+// Ensure the parent directory exists
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
@@ -54,16 +59,44 @@ function all(sql, params = []) {
 
 // Runs the schema.sql file. Called once when the bot starts up
 // (see index.js). Uses IF NOT EXISTS everywhere, so it's safe
-// to call on every boot.
-function initDatabase() {
-  return new Promise((resolve, reject) => {
-    const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+// to call on every boot. Also includes self-healing column checks.
+async function initDatabase() {
+  const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+  await new Promise((resolve, reject) => {
     db.exec(schema, (err) => {
       if (err) return reject(err);
-      console.log('✅ Database ready.');
+      resolve();
+    });
+  });
+
+  // Self-healing migrations for existing databases created with older schema
+  try {
+    const movieCols = await all('PRAGMA table_info(movies)');
+    const colNames = movieCols.map((c) => c.name);
+    if (!colNames.includes('lastRouletteAt')) {
+      await run('ALTER TABLE movies ADD COLUMN lastRouletteAt TEXT');
+    }
+    if (!colNames.includes('isCurrentPick')) {
+      await run('ALTER TABLE movies ADD COLUMN isCurrentPick INTEGER NOT NULL DEFAULT 0');
+    }
+    if (!colNames.includes('chosenVia')) {
+      await run('ALTER TABLE movies ADD COLUMN chosenVia TEXT');
+    }
+  } catch (err) {
+    console.warn('⚠️ Column migration check notice:', err.message);
+  }
+
+  console.log('✅ Database ready.');
+}
+
+function closeDatabase() {
+  return new Promise((resolve) => {
+    db.close((err) => {
+      if (err) console.error('Error closing database:', err.message);
+      else console.log('📁 Database connection closed.');
       resolve();
     });
   });
 }
 
-module.exports = { db, run, get, all, initDatabase };
+module.exports = { db, run, get, all, initDatabase, closeDatabase };

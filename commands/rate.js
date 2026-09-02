@@ -4,7 +4,7 @@
 // /rate <movie> <score> [review] - lets server members rate any
 // movie (1-10) and leave an optional review after watching.
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const moviesDB = require('../database/movies');
 const ratingsDB = require('../database/ratings');
 const { errorEmbed, ratingEmbed } = require('../utils/embeds');
@@ -71,7 +71,7 @@ module.exports = {
             `Could not find **"${movieIdRaw}"** in the server's movie list. Make sure it has been added with \`/add\` first.`
           ),
         ],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }

@@ -142,6 +142,14 @@ module.exports = {
   },
 
   async execute(interaction) {
+    if (!interaction.inGuild()) {
+      await interaction.reply({
+        embeds: [errorEmbed('This command can only be used inside a server.')],
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     const subcommand = interaction.options.getSubcommand();
 
     // --------------------------------------------------------
@@ -164,7 +172,7 @@ module.exports = {
       if (!event || event.guildId !== interaction.guildId) {
         await interaction.reply({
           embeds: [errorEmbed(`Event ID **#${eventId}** was not found.`)],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -174,7 +182,7 @@ module.exports = {
       if (!canCancel) {
         await interaction.reply({
           embeds: [errorEmbed('Only the event organizer or an admin can cancel this movie night.')],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -252,13 +260,13 @@ module.exports = {
           const startTime = targetDate;
           const endTime = new Date(startTime.getTime() + runtimeMinutes * 60 * 1000);
           const nativeEvent = await interaction.guild.scheduledEvents.create({
-            name: `🍿 Movie Night: ${movieTitle}`,
+            name: truncate(`🍿 Movie Night: ${movieTitle}`, 100),
             scheduledStartTime: startTime,
             scheduledEndTime: endTime,
             privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
             entityType: GuildScheduledEventEntityType.External,
             entityMetadata: { location: 'Movie Night Voice Channel' },
-            description: description || `Watch party for ${movieTitle}!`,
+            description: truncate(description || `Watch party for ${movieTitle}!`, 1000),
           });
           discordEventId = nativeEvent.id;
         } catch (err) {

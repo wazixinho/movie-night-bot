@@ -10,6 +10,7 @@ const {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   ComponentType,
+  MessageFlags,
 } = require('discord.js');
 const { helpEmbed } = require('../utils/embeds');
 
@@ -75,7 +76,7 @@ module.exports = {
 
     collector.on('collect', async (i) => {
       if (i.user.id !== interaction.user.id) {
-        await i.reply({ content: 'Use your own `/help` command to browse categories.', ephemeral: true });
+        await i.reply({ content: 'Use your own `/help` command to browse categories.', flags: MessageFlags.Ephemeral });
         return;
       }
 

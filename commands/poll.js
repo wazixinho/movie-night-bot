@@ -59,6 +59,14 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    if (!interaction.inGuild()) {
+      await interaction.reply({
+        embeds: [errorEmbed('This command can only be used inside a server.')],
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     await interaction.deferReply();
 
     const count = interaction.options.getInteger('count') || 4;
@@ -171,17 +179,21 @@ module.exports = {
         const counts = getVoteCounts();
         const total = userVotes.size;
 
-        await interaction.editReply({
-          embeds: [
-            pollEmbed({
-              movies: candidates,
-              votes: counts,
-              totalVotes: total,
-              endsAt,
-              isEnded: false,
-            }),
-          ],
-        });
+        try {
+          await interaction.editReply({
+            embeds: [
+              pollEmbed({
+                movies: candidates,
+                votes: counts,
+                totalVotes: total,
+                endsAt,
+                isEnded: false,
+              }),
+            ],
+          });
+        } catch (editErr) {
+          console.warn('Could not update poll embed:', editErr.message);
+        }
 
         await i.reply({
           content: `✅ You voted for **${targetMovie.title}**!`,

@@ -113,11 +113,17 @@ TMDB_API_KEY=your_tmdb_api_key_here
 
 ### 3. Deploy slash commands
 
-Deploy all 26 slash commands to your server:
+Deploy all 26 slash commands to your server (instant):
 
 ```bash
 npm run deploy
 ```
+
+> **Tip:** If deploying globally across all Discord servers (propagation takes up to 1 hour), run:
+> ```bash
+> npm run deploy:global
+> ```
+> Or set `AUTO_DEPLOY=true` in your cloud host environment variables to automatically register commands on startup!
 
 ### 4. Start the bot
 
@@ -129,6 +135,37 @@ You will see:
 ```
 ✅ Database ready.
 ✅ Logged in as Movie Night Bot#1234
+```
+
+---
+
+## ☁️ Cloud & Production Deployment
+
+### Option A: Railway / Render / Koyeb (PaaS)
+1. Link your repository.
+2. Set Environment Variables:
+   - `DISCORD_TOKEN`
+   - `CLIENT_ID`
+   - `TMDB_API_KEY`
+   - `AUTO_DEPLOY=true` (automatically registers slash commands on first deploy)
+   - `GUILD_ID` (optional; leave blank for global commands)
+   - `DATABASE_PATH` (optional; set to a persistent volume path, e.g. `/data/moviebot.db`)
+3. The included HTTP health-check server will automatically bind to `$PORT` and pass deployment health checks.
+4. The included `Procfile` is automatically detected by platforms that support it.
+
+### Option B: Docker / Container Deployment
+Build and run using the included `Dockerfile`:
+
+```bash
+# Build image
+docker build -t movie-night-bot .
+
+# Run container with volume for SQLite persistence
+docker run -d \
+  --name movie-night-bot \
+  --env-file .env \
+  -v $(pwd)/database:/app/database \
+  movie-night-bot
 ```
 
 ---

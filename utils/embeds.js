@@ -388,7 +388,7 @@ function triviaResultEmbed({ question, winner, correctUsers = [], isTimeout = fa
     .setDescription(
       `### ${question.prompt}\n\n` +
       `✅ **Correct Answer:** **${question.correctAnswer}**\n\n` +
-      `${question.funFact ? `💡 *Fun Fact:* ${question.funFact}\n\n` : ''}` +
+      `${question.funFact ? `💡 *Fun Fact:* ${truncate(question.funFact, 400)}\n\n` : ''}` +
       (winner
         ? `🏆 **First to answer correctly:** <@${winner.id}> (+15 pts)!\n` +
           (correctUsers.length > 1 ? `👏 Also correct: ${correctUsers.slice(1).map((u) => `<@${u.id}> (+10 pts)`).join(', ')}` : '')

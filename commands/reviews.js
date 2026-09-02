@@ -4,7 +4,7 @@
 // /reviews <movie> - shows community member ratings and reviews
 // for any movie in the server's history.
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const moviesDB = require('../database/movies');
 const ratingsDB = require('../database/ratings');
 const { errorEmbed, movieReviewsEmbed } = require('../utils/embeds');
@@ -50,7 +50,7 @@ module.exports = {
     if (!movie) {
       await interaction.reply({
         embeds: [errorEmbed(`Could not find **"${movieIdRaw}"** in the server's movie list.`)],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }

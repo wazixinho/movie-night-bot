@@ -126,6 +126,12 @@ module.exports = {
         });
       } catch (err) {
         console.error('Error processing persistent RSVP:', err);
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: 'Could not process your RSVP right now. Please try again.',
+            flags: MessageFlags.Ephemeral,
+          }).catch(() => {});
+        }
       }
     }
   },

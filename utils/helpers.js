@@ -53,8 +53,11 @@ function parseFutureDate(inputStr) {
     return { date: null, error: 'Please provide a time for the event.' };
   }
 
-  const raw = inputStr.trim().toLowerCase();
+  let raw = inputStr.trim().toLowerCase();
   const now = new Date();
+
+  // Strip leading "next " (e.g. "next friday at 8pm")
+  raw = raw.replace(/^next\s+/, '');
 
   // 1. Check relative "in X minutes/hours/days"
   const relMatch = raw.match(/^in\s+(\d+(?:\.\d+)?)\s*(m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days)$/i);
@@ -73,9 +76,9 @@ function parseFutureDate(inputStr) {
     return { date: targetDate, error: null };
   }
 
-  // 2. Check "today/tomorrow at [time]" or "[dayOfWeek] at [time]"
+  // 2. Check "today/tonight/tomorrow at [time]" or "[dayOfWeek] at [time]"
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const dayMatch = raw.match(/^(today|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s*(?:at\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
+  const dayMatch = raw.match(/^(today|tonight|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\s*(?:at\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
   if (dayMatch) {
     const dayWord = dayMatch[1].toLowerCase();
     let hours = parseInt(dayMatch[2], 10);
@@ -84,13 +87,17 @@ function parseFutureDate(inputStr) {
 
     if (meridiem === 'pm' && hours < 12) hours += 12;
     if (meridiem === 'am' && hours === 12) hours = 0;
+    if (!meridiem && (dayWord === 'tonight' || (hours >= 1 && hours <= 11))) {
+      // Default evening hours to PM if no meridiem provided (e.g. "tonight at 8" or "Friday at 7")
+      if (hours < 12) hours += 12;
+    }
 
     let targetDate = new Date(now);
     targetDate.setHours(hours, minutes, 0, 0);
 
     if (dayWord === 'tomorrow') {
       targetDate.setDate(targetDate.getDate() + 1);
-    } else if (dayWord === 'today') {
+    } else if (dayWord === 'today' || dayWord === 'tonight') {
       // If the time already passed today, assume tomorrow
       if (targetDate <= now) {
         targetDate.setDate(targetDate.getDate() + 1);
