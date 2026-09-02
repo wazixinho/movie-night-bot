@@ -1,22 +1,51 @@
 // ==========================================================
 // commands/watched.js
 // ==========================================================
-// /watched - shows every movie the group has already watched.
+// /watched [genre] [max_runtime] - shows every movie the group
+// has already watched, with optional genre and runtime filters.
 
 const { SlashCommandBuilder, ComponentType } = require('discord.js');
 const moviesDB = require('../database/movies');
 const { errorEmbed, movieCardEmbed } = require('../utils/embeds');
 const { paginate, createPaginationRow } = require('../utils/pagination');
+const { GENRE_LIST } = require('../utils/tmdb');
 
 module.exports = {
-  data: new SlashCommandBuilder().setName('watched').setDescription('Show every movie the group has already watched'),
+  data: new SlashCommandBuilder()
+    .setName('watched')
+    .setDescription('Show every movie the group has already watched')
+    .addStringOption((option) =>
+      option
+        .setName('genre')
+        .setDescription('Filter watched list by genre')
+        .setRequired(false)
+        .addChoices(...GENRE_LIST.slice(0, 25).map((g) => ({ name: g, value: g })))
+    )
+    .addIntegerOption((option) =>
+      option
+        .setName('max_runtime')
+        .setDescription('Filter by maximum runtime in minutes (e.g. 110)')
+        .setRequired(false)
+        .setMinValue(30)
+        .setMaxValue(360)
+    ),
 
   async execute(interaction) {
     await interaction.deferReply();
-    const movies = await moviesDB.getWatched();
+    const genre = interaction.options.getString('genre');
+    const maxRuntime = interaction.options.getInteger('max_runtime');
+
+    const movies = await moviesDB.getWatched({ genre, maxRuntime });
 
     if (movies.length === 0) {
-      await interaction.editReply({ embeds: [errorEmbed('No movies have been watched yet.')] });
+      const filters = [];
+      if (genre) filters.push(`genre **${genre}**`);
+      if (maxRuntime) filters.push(`max runtime **${maxRuntime}m**`);
+      const filterMsg = filters.length > 0 ? ` matching ${filters.join(' and ')}` : '';
+
+      await interaction.editReply({
+        embeds: [errorEmbed(`No watched movies found${filterMsg}.`)],
+      });
       return;
     }
 

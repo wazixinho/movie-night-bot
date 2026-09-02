@@ -1,8 +1,9 @@
 // ==========================================================
-// commands/movie.js
+// commands/stream.js
 // ==========================================================
-// /movie <movie> - shows complete info about any movie on TMDb,
-// with Trailer, TMDb, and Where to Watch link buttons, plus server ratings.
+// /stream <movie> [country] - finds where a movie is currently streaming
+// on platforms like Netflix, Disney+, Amazon Prime Video, Max, etc.
+// Powered by TMDb and JustWatch data.
 
 const {
   SlashCommandBuilder,
@@ -14,21 +15,44 @@ const {
   ComponentType,
 } = require('discord.js');
 const tmdb = require('../utils/tmdb');
-const moviesDB = require('../database/movies');
-const ratingsDB = require('../database/ratings');
-const { errorEmbed, movieDetailEmbed } = require('../utils/embeds');
+const { errorEmbed, streamProvidersEmbed } = require('../utils/embeds');
 const { truncate } = require('../utils/helpers');
 
 function looksLikeId(value) {
   return /^\d+$/.test(value.trim());
 }
 
+const COUNTRIES = [
+  { name: '🇺🇸 United States (US)', value: 'US' },
+  { name: '🇬🇧 United Kingdom (GB)', value: 'GB' },
+  { name: '🇨🇦 Canada (CA)', value: 'CA' },
+  { name: '🇦🇺 Australia (AU)', value: 'AU' },
+  { name: '🇫🇷 France (FR)', value: 'FR' },
+  { name: '🇩🇪 Germany (DE)', value: 'DE' },
+  { name: '🇪🇸 Spain (ES)', value: 'ES' },
+  { name: '🇮🇹 Italy (IT)', value: 'IT' },
+  { name: '🇯🇵 Japan (JP)', value: 'JP' },
+  { name: '🇧🇷 Brazil (BR)', value: 'BR' },
+  { name: '🇲🇽 Mexico (MX)', value: 'MX' },
+];
+
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('movie')
-    .setDescription('Show complete information about a movie')
+    .setName('stream')
+    .setDescription('Check where a movie is currently streaming (Netflix, Prime, Disney+, etc.)')
     .addStringOption((option) =>
-      option.setName('movie').setDescription('The movie title to look up').setRequired(true).setAutocomplete(true),
+      option
+        .setName('movie')
+        .setDescription('The movie title to check streaming providers for')
+        .setRequired(true)
+        .setAutocomplete(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName('country')
+        .setDescription('The country to check availability for (default: US)')
+        .setRequired(false)
+        .addChoices(...COUNTRIES)
     ),
 
   async autocomplete(interaction) {
@@ -49,6 +73,7 @@ module.exports = {
   async execute(interaction) {
     await interaction.deferReply();
     const query = interaction.options.getString('movie', true);
+    const country = interaction.options.getString('country') || 'US';
 
     let tmdbId;
 
@@ -69,10 +94,13 @@ module.exports = {
           new StringSelectMenuOptionBuilder()
             .setLabel(truncate(`${m.title} (${tmdb.formatYear(m.release_date)})`, 100))
             .setDescription(truncate(m.overview || 'No description available.', 100))
-            .setValue(String(m.id)),
+            .setValue(String(m.id))
         );
         const row = new ActionRowBuilder().addComponents(
-          new StringSelectMenuBuilder().setCustomId('movie_select').setPlaceholder('Select a movie...').addOptions(options),
+          new StringSelectMenuBuilder()
+            .setCustomId('stream_movie_select')
+            .setPlaceholder('Select the movie...')
+            .addOptions(options)
         );
 
         const message = await interaction.editReply({
@@ -89,62 +117,66 @@ module.exports = {
           tmdbId = selectInteraction.values[0];
           await selectInteraction.deferUpdate();
         } catch {
-          await interaction.editReply({ content: '⌛ Selection timed out. Please run `/movie` again.', components: [] });
+          await interaction.editReply({
+            content: '⌛ Selection timed out. Please run `/stream` again.',
+            components: [],
+          });
           return;
         }
       }
     }
 
     let details;
+    let providers;
     try {
-      details = await tmdb.getMovieDetails(tmdbId);
+      [details, providers] = await Promise.all([
+        tmdb.getMovieDetails(tmdbId),
+        tmdb.getWatchProviders(tmdbId, country),
+      ]);
     } catch {
-      await interaction.editReply({ content: '', embeds: [errorEmbed('Could not reach TMDb. Please try again shortly.')], components: [] });
+      await interaction.editReply({
+        content: '',
+        embeds: [errorEmbed('Could not fetch streaming data from TMDb. Please try again.')],
+        components: [],
+      });
       return;
     }
 
-    const embed = movieDetailEmbed({
+    const movieObj = {
       title: details.title,
       year: tmdb.formatYear(details.release_date),
       runtime: details.runtime,
-      genres: tmdb.formatGenres(details.genres),
-      overview: details.overview,
       poster: tmdb.getPosterUrl(details.poster_path),
       rating: details.vote_average,
-    });
-    embed.setURL(tmdb.getTmdbUrl(details.id));
+    };
 
-    // Check if this movie has server ratings
-    try {
-      const dbMovie = await moviesDB.findActiveByTmdbId(details.id);
-      if (dbMovie) {
-        const ratingSummary = await ratingsDB.getMovieRatingSummary(dbMovie.id);
-        if (ratingSummary.count > 0) {
-          embed.addFields({
-            name: '👥 Server Community Rating',
-            value: `⭐ **${ratingSummary.avgScore}/10** (${ratingSummary.count} review${ratingSummary.count === 1 ? '' : 's'})`,
-            inline: true,
-          });
-        }
-      }
-    } catch {
-      // Non-critical
-    }
+    const embed = streamProvidersEmbed({
+      movie: movieObj,
+      providers,
+      countryCode: country,
+    });
 
     const buttons = [];
-    const trailerUrl = tmdb.getTrailerUrl(details);
-    if (trailerUrl) {
-      buttons.push(new ButtonBuilder().setLabel('▶️ Trailer').setStyle(ButtonStyle.Link).setURL(trailerUrl));
+    if (providers?.link) {
+      buttons.push(
+        new ButtonBuilder()
+          .setLabel('🔍 View on JustWatch / TMDb')
+          .setStyle(ButtonStyle.Link)
+          .setURL(providers.link)
+      );
     }
     buttons.push(
       new ButtonBuilder()
-        .setLabel('📺 Where to Watch')
+        .setLabel('🔗 TMDb Page')
         .setStyle(ButtonStyle.Link)
-        .setURL(`https://www.themoviedb.org/movie/${details.id}/watch`)
+        .setURL(tmdb.getTmdbUrl(details.id))
     );
-    buttons.push(new ButtonBuilder().setLabel('🔗 TMDb').setStyle(ButtonStyle.Link).setURL(tmdb.getTmdbUrl(details.id)));
 
     const row = new ActionRowBuilder().addComponents(buttons);
-    await interaction.editReply({ content: '', embeds: [embed], components: [row] });
+    await interaction.editReply({
+      content: '',
+      embeds: [embed],
+      components: [row],
+    });
   },
 };

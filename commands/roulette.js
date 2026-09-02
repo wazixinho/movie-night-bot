@@ -1,9 +1,9 @@
 // ==========================================================
 // commands/roulette.js
 // ==========================================================
-// /roulette - randomly picks ONE movie from the watchlist with
-// a ~8 second spinning animation, then shows Mark as Watched /
-// Spin Again (admin only) and Cancel buttons.
+// /roulette [genre] [max_runtime] - randomly picks ONE movie
+// from the watchlist with an ~8 second spinning animation, with
+// support for genre and runtime filters.
 
 const {
   SlashCommandBuilder,
@@ -18,6 +18,7 @@ const settingsDB = require('../database/settings');
 const { isAdmin } = require('../utils/permissions');
 const { errorEmbed, successEmbed, rouletteSpinningEmbed, rouletteWinnerEmbed } = require('../utils/embeds');
 const { pickRandom, sleep } = require('../utils/helpers');
+const { GENRE_LIST } = require('../utils/tmdb');
 
 const SPIN_TICKS = 8;
 
@@ -44,12 +45,39 @@ async function spin(interaction, watchlist) {
 }
 
 module.exports = {
-  data: new SlashCommandBuilder().setName('roulette').setDescription('Spin the wheel and randomly pick a movie for tonight'),
+  data: new SlashCommandBuilder()
+    .setName('roulette')
+    .setDescription('Spin the wheel and randomly pick a movie for tonight')
+    .addStringOption((option) =>
+      option
+        .setName('genre')
+        .setDescription('Optional genre filter for the roulette')
+        .setRequired(false)
+        .addChoices(...GENRE_LIST.slice(0, 25).map((g) => ({ name: g, value: g })))
+    )
+    .addIntegerOption((option) =>
+      option
+        .setName('max_runtime')
+        .setDescription('Optional maximum runtime in minutes (e.g. 100)')
+        .setRequired(false)
+        .setMinValue(30)
+        .setMaxValue(360)
+    ),
 
   async execute(interaction) {
-    const watchlist = await moviesDB.getWatchlist();
+    const genre = interaction.options.getString('genre');
+    const maxRuntime = interaction.options.getInteger('max_runtime');
+
+    const watchlist = await moviesDB.getWatchlist({ genre, maxRuntime });
     if (watchlist.length === 0) {
-      await interaction.reply({ embeds: [errorEmbed('The watchlist is empty. Add some movies with `/add` first!')] });
+      const filters = [];
+      if (genre) filters.push(`genre **${genre}**`);
+      if (maxRuntime) filters.push(`max runtime **${maxRuntime}m**`);
+      const filterMsg = filters.length > 0 ? ` matching ${filters.join(' and ')}` : '';
+
+      await interaction.reply({
+        embeds: [errorEmbed(`No movies found in the watchlist${filterMsg}. Add some with \`/add\`!`)],
+      });
       return;
     }
 
@@ -95,7 +123,7 @@ module.exports = {
           return;
         }
         await i.deferUpdate();
-        const freshWatchlist = await moviesDB.getWatchlist();
+        const freshWatchlist = await moviesDB.getWatchlist({ genre, maxRuntime });
         if (freshWatchlist.length === 0) {
           await interaction.editReply({ embeds: [errorEmbed('The watchlist is now empty!')], components: [] });
           collector.stop('completed');

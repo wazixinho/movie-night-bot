@@ -1,58 +1,104 @@
 # 🎬 Movie Night Bot
 
-A Discord bot for organizing movie nights with friends. Suggest movies, vote with a spinning roulette wheel, track what you've watched, and keep stats — all powered by [TMDb](https://www.themoviedb.org/).
+A modern, full-featured Discord bot for organizing movie nights and watch parties with friends. Manage watchlists, hold live voting polls, spin animated roulette wheels, check streaming availability, schedule watch parties with RSVP tracking, rate and review watched movies, discover recommendations, and play movie trivia — all powered by [TMDb](https://www.themoviedb.org/) and [JustWatch](https://www.justwatch.com/).
 
-## Features
+## 🌟 Highlights & New Features
 
-- `/add` — search TMDb and add a movie to the watchlist (with autocomplete + disambiguation menu)
-- `/watchlist` / `/watched` — paginated, poster-card lists of your movies
-- `/movie` — full details for any movie, with Trailer and TMDb link buttons
-- `/roulette` — an ~8 second animated spin that picks tonight's movie, with Mark Watched / Spin Again / Cancel buttons
-- `/random` — instantly pick a random watchlist movie, no animation
-- `/suggest` — get 3 random suggestions at once
-- `/stats` — watchlist size, top contributor, last winner, and more
-- `/night` — see what's currently queued up for movie night
-- `/history` — the most recently watched movies
-- `/addedby` — every movie a specific person has suggested
-- `/settings` — configure an announcement channel, admin role, and default movie channel
-- Admin tools: `/remove`, `/markwatched`, `/undo`, `/clearwatchlist`, `/clearwatched`
+- **🗳️ Live Interactive Voting (`/poll`):** Put 2–5 movies up for a vote with real-time button voting, live progress bars, timer countdowns, and automatic winner designation with a 1-click "Mark as Watched" button!
+- **📺 Where to Watch (`/stream`):** Find out where any movie is streaming (Netflix, Disney+, Max, Prime Video, Apple TV+, etc.), rent, or buy across 11+ countries powered by JustWatch via TMDb!
+- **📅 Watch Party Scheduling & RSVPs (`/schedule`):** Schedule movie nights with smart date parsing (e.g. `tomorrow at 8pm` or `in 3 hours`), native Discord Server Event integration, and persistent interactive RSVP buttons (`🍿 Attending`, `🤔 Maybe`, `❌ Can't Make It`).
+- **⭐ Community Ratings & Reviews (`/rate`, `/reviews`, `/toprated`):** Rate watched movies 1–10, leave reviews, view community averages vs. TMDb scores, and browse the server's top-rated movie leaderboard.
+- **💡 Smart Movie Recommendations (`/recommend`):** Get curated recommendations based on movies you love, with a 1-click dropdown menu to add any recommendation straight into your server watchlist.
+- **🧠 Movie Trivia Mini-Game (`/trivia`):** Engage members while waiting for movie night with dynamic trivia questions (Directors, Cast & Characters, Release Years, Famous Taglines), 30s timers, points, and a server leaderboard!
+- **🎯 Genre & Runtime Filters:** Filter `/watchlist`, `/watched`, `/roulette`, and `/random` by genre (Horror, Action, Sci-Fi, Comedy, etc.) or maximum runtime (e.g. `<= 100 min`).
+- **📖 Interactive Help Center (`/help`):** Interactive category selector to explore all 26 commands with syntax and permissions.
 
-## Prerequisites
+---
+
+## 📋 Command Reference
+
+### 🍿 Watchlist & Suggestions
+| Command | Description | Example |
+|---|---|---|
+| `/add <movie>` | Search TMDb and add a movie to the watchlist | `/add movie: dune` |
+| `/watchlist [genre] [max_runtime]` | Show movies waiting to be watched (paginated & filterable) | `/watchlist genre: Horror max_runtime: 100` |
+| `/watched [genre] [max_runtime]` | Show movies already watched (paginated & filterable) | `/watched genre: Sci-Fi` |
+| `/suggest` | Get 3 random suggestions at once | `/suggest` |
+| `/random [genre] [max_runtime]` | Instantly pick a random watchlist movie with optional filters | `/random genre: Comedy` |
+| `/night` | Current movie night status and active pick | `/night` |
+| `/history` | Most recently watched movies | `/history` |
+| `/addedby <user>` | Movies suggested by a specific person | `/addedby user: @Ahmed` |
+
+### 🗳️ Voting & Decisions
+| Command | Description | Example |
+|---|---|---|
+| `/poll [count] [duration] [genre]` | Live interactive poll with button voting & progress bars | `/poll count: 4 duration: 5 genre: Action` |
+| `/roulette [genre] [max_runtime]` | Animated 8s wheel spin to pick tonight's movie | `/roulette genre: Horror max_runtime: 110` |
+
+### 🔍 Discovery & Streaming
+| Command | Description | Example |
+|---|---|---|
+| `/movie <movie>` | Full movie details, trailer, TMDb link, and where to watch | `/movie movie: interstellar` |
+| `/stream <movie> [country]` | Check streaming platforms (Netflix, Prime, Disney+, etc.) | `/stream movie: spirited away country: US` |
+| `/recommend <movie>` | Get top recommendations with 1-click add to watchlist | `/recommend movie: the matrix` |
+| `/trivia play` | Test your film knowledge with a 4-choice timed question | `/trivia play` |
+| `/trivia leaderboard` | View server's top trivia players & accuracy % | `/trivia leaderboard` |
+
+### ⭐ Ratings & Community
+| Command | Description | Example |
+|---|---|---|
+| `/rate <movie> <score> [review]` | Rate a watched movie (1-10) with optional review | `/rate movie: dune score: 9 review: Masterpiece!` |
+| `/reviews <movie>` | View member reviews and community average rating | `/reviews movie: dune` |
+| `/toprated [limit]` | Leaderboard of server's highest-rated movies | `/toprated limit: 10` |
+| `/stats` | Watchlist size, top contributor, last winner, and stats | `/stats` |
+
+### 📅 Events & Scheduling
+| Command | Description | Example |
+|---|---|---|
+| `/schedule create <movie> <time> [description]` | Schedule a movie night with RSVP buttons & Discord Event | `/schedule create movie: Alien time: tomorrow at 8pm` |
+| `/schedule list` | View upcoming scheduled movie nights and attendees | `/schedule list` |
+| `/schedule cancel <id>` | Cancel a scheduled movie night | `/schedule cancel id: 1` |
+
+### ⚙️ Admin & Server Settings
+| Command | Description | Example |
+|---|---|---|
+| `/remove <movie>` | Remove a movie from either list | `/remove movie: dune` |
+| `/markwatched <movie>` | Move a movie from watchlist → watched | `/markwatched movie: dune` |
+| `/undo <movie>` | Move a movie from watched → watchlist | `/undo movie: dune` |
+| `/clearwatchlist` | Wipe the whole watchlist (asks to confirm) | `/clearwatchlist` |
+| `/clearwatched` | Wipe the watched list (asks to confirm) | `/clearwatched` |
+| `/settings view` | View current server settings | `/settings view` |
+| `/settings announcement-channel <#channel>` | Set the announcement channel | `/settings announcement-channel channel: #announcements` |
+| `/settings admin-role <@role>` | Grant bot-admin access to a specific role | `/settings admin-role role: @Movie Host` |
+| `/settings movie-channel <#channel>` | Set the default movie channel | `/settings movie-channel channel: #movie-night` |
+
+---
+
+## 🛠️ Prerequisites
 
 - [Node.js](https://nodejs.org/) 18 or newer
-- A Discord account and a server where you can add bots
-- TMDb API key
+- A Discord account and a server where you have bot invite permissions
+- A free [TMDb](https://www.themoviedb.org/) API key
 
-## 1. Installation
+---
+
+## 🚀 Setup & Installation
+
+### 1. Install dependencies
 
 ```bash
-cd movie-night-bot
 npm install
 ```
 
-## 2. Getting a Discord Bot Token
+### 2. Configure environment variables
 
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and click **New Application**. Give it a name (e.g. "Movie Night Bot").
-2. Open the **Bot** tab, click **Reset Token**, and copy the token. This is your `DISCORD_TOKEN` — keep it secret.
-3. On the same **Bot** tab, make sure **Public Bot** is off if you only want to invite it yourself.
-4. Go to the **General Information** tab and copy the **Application ID**. This is your `CLIENT_ID`.
-5. Go to **OAuth2 → URL Generator**. Under **Scopes**, check `bot` and `applications.commands`. Under **Bot Permissions**, check at least: `Send Messages`, `Embed Links`, `Use External Emojis`, `Read Message History`.
-6. Copy the generated URL, open it in your browser, and invite the bot to your server.
-7. In Discord, right-click your server icon → **Copy Server ID** (enable Developer Mode in Discord Settings → Advanced if you don't see this option). This is your `GUILD_ID`.
-
-## 3. Getting a TMDb API Key
-
-1. Create a free account at [themoviedb.org](https://www.themoviedb.org/signup).
-2. Go to **Settings → API** and request an API key (choose "Developer" — it's free).
-3. Copy the **API Key (v3 auth)**. This is your `TMDB_API_KEY`.
-
-## 4. Setting up the .env file
-
-Copy the example file and fill in the four values from above:
+Copy `.env.example` to `.env`:
 
 ```bash
 cp .env.example .env
 ```
+
+Fill in your tokens in `.env`:
 
 ```env
 DISCORD_TOKEN=your_discord_bot_token_here
@@ -61,100 +107,105 @@ GUILD_ID=your_discord_server_id_here
 TMDB_API_KEY=your_tmdb_api_key_here
 ```
 
-## 5. Deploying slash commands
+- **DISCORD_TOKEN & CLIENT_ID**: From [Discord Developer Portal](https://discord.com/developers/applications).
+- **GUILD_ID**: Right-click your server in Discord and select **Copy Server ID** (enable Developer Mode in Discord Settings → Advanced).
+- **TMDB_API_KEY**: From [TMDb API Settings](https://www.themoviedb.org/settings/api).
 
-Run this once, and again any time you add or change a command:
+### 3. Deploy slash commands
 
-```bash
-node deploy-commands.js
-```
-
-## 6. Starting the bot
+Deploy all 26 slash commands to your server:
 
 ```bash
-node index.js
+npm run deploy
 ```
 
-You should see `✅ Database ready.` followed by `✅ Logged in as <YourBot>#0000`. The bot is now online — try `/add` in your server!
+### 4. Start the bot
 
-## Folder Structure
+```bash
+npm start
+```
+
+You will see:
+```
+✅ Database ready.
+✅ Logged in as Movie Night Bot#1234
+```
+
+---
+
+## 📁 Project Architecture
 
 ```
 movie-night-bot/
 │
-├── commands/            One file per slash command
-├── database/
-│   ├── db.js             SQLite connection + promise wrappers
-│   ├── schema.sql         Table definitions
-│   ├── movies.js          Movie queries
-│   ├── users.js           Contributor stats
-│   └── settings.js        Per-server settings
-├── events/
-│   ├── ready.js           Runs once, on login
-│   └── interactionCreate.js  Routes slash commands + autocomplete
-├── utils/
-│   ├── tmdb.js            TMDb API wrapper
-│   ├── embeds.js          All embed builders
-│   ├── pagination.js      List paging helpers
-│   ├── permissions.js     Admin permission check
-│   └── helpers.js         Small generic helpers
-├── index.js               Bot entry point
-├── deploy-commands.js     Registers slash commands with Discord
-├── package.json
-├── .env.example
-└── README.md
+├── commands/               Modular slash commands (26 total)
+│   ├── add.js              Suggest movies via TMDb with autocomplete
+│   ├── addedby.js          List movies suggested by a user
+│   ├── clearwatched.js     Admin tool to reset watched history
+│   ├── clearwatchlist.js   Admin tool to reset watchlist
+│   ├── help.js             Interactive categorized command browser
+│   ├── history.js          Recently watched movies
+│   ├── markwatched.js      Move watchlist movie to watched
+│   ├── movie.js            Full TMDb movie details + trailer + stream links
+│   ├── night.js            Current active movie night status
+│   ├── poll.js             Live interactive voting poll with progress bars
+│   ├── random.js           Instant random pick with genre/runtime filters
+│   ├── rate.js             Rate movies 1-10 with optional review
+│   ├── recommend.js        Movie recommendations with 1-click add
+│   ├── remove.js           Remove movies from list
+│   ├── reviews.js          View server member ratings and reviews
+│   ├── roulette.js         Animated spinning wheel pick with filters
+│   ├── schedule.js         Schedule watch parties with persistent RSVPs
+│   ├── settings.js         Manage guild announcement and admin settings
+│   ├── stats.js            Community leaderboard and watchlist stats
+│   ├── stream.js           Where to stream via JustWatch / TMDb
+│   ├── suggest.js          Get 3 random suggestions
+│   ├── toprated.js         Server top-rated movie leaderboard
+│   ├── trivia.js           Interactive 4-choice trivia mini-game
+│   ├── undo.js             Move watched movie back to watchlist
+│   ├── watched.js          Paginated watched list with filters
+│   └── watchlist.js        Paginated watchlist with filters
+│
+├── database/               SQLite persistence layer
+│   ├── db.js               Connection & promise-based query wrappers
+│   ├── schema.sql          Complete relational database schema
+│   ├── movies.js           Movie list queries & filter handlers
+│   ├── users.js            User contribution counters
+│   ├── settings.js         Guild configuration
+│   ├── ratings.js          Community ratings, reviews, and leaderboard
+│   ├── events.js           Scheduled movie nights & RSVP state
+│   └── trivia.js           Trivia player stats, accuracy, and leaderboard
+│
+├── events/                 Discord.js event handlers
+│   ├── ready.js            Bot startup routine
+│   └── interactionCreate.js Routes commands, autocomplete & persistent RSVPs
+│
+├── utils/                  Reusable helper libraries
+│   ├── tmdb.js             TMDb API wrapper (details, credits, stream providers)
+│   ├── embeds.js           Visual UI embed builders
+│   ├── pagination.js       List pagination with button controls
+│   ├── permissions.js      Admin permission check
+│   └── helpers.js          Date parser, progress bars, timestamps
+│
+├── deploy-commands.js      Slash command registration script
+├── index.js                Bot entry point
+└── package.json
 ```
-
-## Command Reference
-
-### Everyone
-
-| Command | Description | Example |
-|---|---|---|
-| `/add <movie>` | Search TMDb and add a movie to the watchlist | `/add movie: dune` |
-| `/watchlist` | Show movies waiting to be watched (paginated) | `/watchlist` |
-| `/watched` | Show movies already watched (paginated) | `/watched` |
-| `/movie <movie>` | Full details for any movie, with Trailer/TMDb buttons | `/movie movie: interstellar` |
-| `/roulette` | Animated spin to pick tonight's movie | `/roulette` |
-| `/random` | Instantly pick a random watchlist movie | `/random` |
-| `/suggest` | Get 3 random suggestions at once | `/suggest` |
-| `/stats` | Watchlist size, top contributor, more | `/stats` |
-| `/night` | Current movie night status | `/night` |
-| `/history` | Most recently watched movies | `/history` |
-| `/addedby <user>` | Movies suggested by a specific person | `/addedby user: @Ahmed` |
-| `/settings view` | View current server settings | `/settings view` |
-
-### Admins only (Administrator permission, or the configured admin role)
-
-| Command | Description | Example |
-|---|---|---|
-| `/remove <movie>` | Remove a movie from either list | `/remove movie: dune` |
-| `/markwatched <movie>` | Move a movie from watchlist → watched | `/markwatched movie: dune` |
-| `/undo <movie>` | Move a movie from watched → watchlist | `/undo movie: dune` |
-| `/clearwatchlist` | Wipe the whole watchlist (asks to confirm) | `/clearwatchlist` |
-| `/clearwatched` | Wipe the whole watched list (asks to confirm) | `/clearwatched` |
-| `/settings announcement-channel <#channel>` | Set the announcement channel | |
-| `/settings admin-role <@role>` | Grant bot-admin access to a role | |
-| `/settings movie-channel <#channel>` | Set the default movie channel | |
-
-## Notes on Admin Access
-
-By default, anyone with Discord's built-in **Administrator** permission can use admin-only commands. If you'd rather grant admin access to specific people without giving them full server Administrator (e.g. a "movie night host" role), set it with:
-
-```
-/settings admin-role role: @Movie Night Host
-```
-
-## Duplicate Prevention
-
-If a movie is already sitting in the watchlist, `/add` will refuse it with *"This movie is already in the Watchlist."* A movie that's already been watched **can** be re-suggested (handy for rewatch nights).
-
-## Troubleshooting
-
-- **"Missing DISCORD_TOKEN or TMDB_API_KEY"** — make sure you created `.env` (not just `.env.example`) and filled in every value.
-- **Slash commands don't show up** — run `node deploy-commands.js` again, and make sure `CLIENT_ID`/`GUILD_ID` are correct. Guild commands should appear instantly.
-- **sqlite3 fails to install** — make sure you're on Node 18+; try deleting `node_modules` and `package-lock.json` and running `npm install` again.
 
 ---
 
-Built with [discord.js](https://discord.js.org/) v14 and the [TMDb API](https://www.themoviedb.org/documentation/api).
+## 🔒 Permissions & Bot Setup
+
+In Discord Developer Portal (**OAuth2 → URL Generator**), select:
+- **Scopes**: `bot`, `applications.commands`
+- **Bot Permissions**:
+  - `Send Messages`
+  - `Embed Links`
+  - `Attach Files`
+  - `Read Message History`
+  - `Use External Emojis`
+  - `Manage Events` *(Recommended: Enables automatic creation of native Discord Server Events for `/schedule`)*
+
+---
+
+Built with [discord.js](https://discord.js.org/) v14, SQLite, and the [TMDb API](https://www.themoviedb.org/documentation/api).

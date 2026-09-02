@@ -29,12 +29,34 @@ function findActiveByTmdbId(tmdbId) {
   return get(`SELECT * FROM movies WHERE tmdbId = ? AND status = 'watchlist'`, [tmdbId]);
 }
 
-function getWatchlist() {
-  return all(`SELECT * FROM movies WHERE status = 'watchlist' ORDER BY title COLLATE NOCASE ASC`);
+function getWatchlist({ genre, maxRuntime } = {}) {
+  let query = `SELECT * FROM movies WHERE status = 'watchlist'`;
+  const params = [];
+  if (genre) {
+    query += ` AND genres LIKE ? COLLATE NOCASE`;
+    params.push(`%${genre}%`);
+  }
+  if (maxRuntime) {
+    query += ` AND runtime > 0 AND runtime <= ?`;
+    params.push(Number(maxRuntime));
+  }
+  query += ` ORDER BY title COLLATE NOCASE ASC`;
+  return all(query, params);
 }
 
-function getWatched() {
-  return all(`SELECT * FROM movies WHERE status = 'watched' ORDER BY title COLLATE NOCASE ASC`);
+function getWatched({ genre, maxRuntime } = {}) {
+  let query = `SELECT * FROM movies WHERE status = 'watched'`;
+  const params = [];
+  if (genre) {
+    query += ` AND genres LIKE ? COLLATE NOCASE`;
+    params.push(`%${genre}%`);
+  }
+  if (maxRuntime) {
+    query += ` AND runtime > 0 AND runtime <= ?`;
+    params.push(Number(maxRuntime));
+  }
+  query += ` ORDER BY title COLLATE NOCASE ASC`;
+  return all(query, params);
 }
 
 function getMovieById(id) {
