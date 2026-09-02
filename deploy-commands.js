@@ -6,8 +6,10 @@
 // Usage:
 //   node deploy-commands.js          -> Deploys to GUILD_ID if set, or globally
 //   node deploy-commands.js --global -> Forces global deployment to all servers
+//   node deploy-commands.js --clear  -> Clears all registered commands
 //   npm run deploy                   -> Deploys to guild/global based on .env
 //   npm run deploy:global            -> Deploys globally
+//   npm run deploy:clear             -> Clears all commands
 //
 // Note: Guild deployment is instant. Global deployment can take
 // up to 1 hour to propagate across Discord.
@@ -27,6 +29,20 @@ async function deployCommands(options = {}) {
     throw new Error('Missing DISCORD_TOKEN or CLIENT_ID');
   }
 
+  const rest = new REST().setToken(token);
+
+  // Handle clearing commands
+  if (options.clear || process.argv.includes('--clear')) {
+    console.log('🧹 Clearing all slash commands...');
+    if (guildId) {
+      await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] });
+      console.log(`✅ Cleared guild commands for guild ${guildId}.`);
+    }
+    await rest.put(Routes.applicationCommands(clientId), { body: [] });
+    console.log('✅ Cleared global commands.');
+    return 0;
+  }
+
   const commands = [];
   const commandsPath = path.join(__dirname, 'commands');
   const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
@@ -38,16 +54,38 @@ async function deployCommands(options = {}) {
     }
   }
 
-  const rest = new REST().setToken(token);
-
   const forceGlobal = options.global || process.argv.includes('--global');
   const isGlobal = forceGlobal || !guildId;
 
   if (isGlobal) {
+    // If deploying globally, clear any guild commands for GUILD_ID so they don't duplicate
+    if (guildId) {
+      try {
+        const existingGuild = await rest.get(Routes.applicationGuildCommands(clientId, guildId));
+        if (Array.isArray(existingGuild) && existingGuild.length > 0) {
+          console.log(`🧹 Clearing ${existingGuild.length} guild commands to prevent duplicates with global commands...`);
+          await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] });
+        }
+      } catch {
+        // Non-critical
+      }
+    }
+
     console.log(`🌐 Deploying ${commands.length} slash commands globally...`);
     await rest.put(Routes.applicationCommands(clientId), { body: commands });
     console.log('✅ Global slash commands deployed successfully (propagation may take up to an hour).');
   } else {
+    // If deploying to guild, clear any existing global commands to prevent Discord from displaying duplicates
+    try {
+      const existingGlobal = await rest.get(Routes.applicationCommands(clientId));
+      if (Array.isArray(existingGlobal) && existingGlobal.length > 0) {
+        console.log(`🧹 Clearing ${existingGlobal.length} global commands to prevent duplicates in guild...`);
+        await rest.put(Routes.applicationCommands(clientId), { body: [] });
+      }
+    } catch {
+      // Non-critical
+    }
+
     console.log(`🚀 Deploying ${commands.length} slash commands to guild ${guildId}...`);
     await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands });
     console.log('✅ Guild slash commands deployed successfully.');
@@ -58,7 +96,8 @@ async function deployCommands(options = {}) {
 
 if (require.main === module) {
   const isGlobal = process.argv.includes('--global');
-  deployCommands({ global: isGlobal }).catch((error) => {
+  const isClear = process.argv.includes('--clear');
+  deployCommands({ global: isGlobal, clear: isClear }).catch((error) => {
     console.error('❌ Failed to deploy commands:', error);
     process.exit(1);
   });
